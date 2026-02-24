@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视创AI</title>
+    <!-- 如果你有图标，确保 logo.png 也在 shell_dist 文件夹里 -->
+    <link rel="icon" href="/logo.png" type="image/png">
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background-color: #ffffff; }
+        
+        /* iframe 全屏样式 */
+        iframe { 
+            width: 100%; 
+            height: 100%; 
+            border: none; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            z-index: 1;
+        }
+
+        /* 加载动画样式 */
+        #loading-mask {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #fff; z-index: 999;
+            display: flex; justify-content: center; align-items: center;
+            transition: opacity 0.5s ease;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid #f3f3f3; border-top: 4px solid #333; border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <!-- 加载遮罩 -->
+    <div id="loading-mask">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- 核心 iframe -->
+    <iframe id="app-frame"></iframe>
+
+    <script>
+        // ==========================================
+        // ✅ 核心配置：已修改为你提供的 HTTPS 真实后端
+        const CORE_DOMAIN = "https://bcmq5vydfg.coze.site"; 
+        // ==========================================
+
+        const iframe = document.getElementById('app-frame');
+        const loadingMask = document.getElementById('loading-mask');
+
+        // 1. 初始化：根据当前浏览器地址栏，决定 iframe 加载什么页面
+        function initFrame() {
+            const currentPath = window.location.pathname + window.location.search;
+            
+            // 如果是根目录，直接加载后端首页
+            if (currentPath === '/' || currentPath === '/index.html') {
+                iframe.src = CORE_DOMAIN;
+            } else {
+                // 如果是子路径（如 /video），拼接到后端域名后面
+                // 移除 CORE_DOMAIN 末尾可能多余的斜杠，防止双斜杠
+                const cleanDomain = CORE_DOMAIN.replace(/\/$/, '');
+                iframe.src = cleanDomain + currentPath;
+            }
+        }
+
+        // 2. 监听 iframe 加载完成，隐藏遮罩
+        iframe.onload = function() {
+            loadingMask.style.opacity = '0';
+            setTimeout(() => { loadingMask.style.display = 'none'; }, 500);
+        };
+
+        // 3. 核心同步逻辑：监听后端发来的路由变化消息
+        window.addEventListener('message', function(event) {
+            // 这里可以加一个安全检查，确保消息来自你的后端
+            // if (event.origin !== new URL(CORE_DOMAIN).origin) return;
+
+            const data = event.data;
+            // 收到后端喊话： "我跳到 /new-page 了"
+            if (data && data.type === 'ROUTE_CHANGE' && data.path) {
+                // 外壳修改地址栏，但不刷新页面
+                history.replaceState(null, '', data.path);
+            }
+        });
+
+        // 启动
+        initFrame();
+    </script>
+</body>
+</html>
