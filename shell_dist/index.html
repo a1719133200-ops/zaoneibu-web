@@ -34,7 +34,8 @@
     <div id="loading-layer">
         <div class="loading-spinner"></div>
     </div>
-    <iframe id="app-frame" data-brother-site="兄弟合作分站：https://qpgzftxw9x.coze.site"></iframe>
+    <iframe id="app-frame" sandbox="allow-same-origin allow-scripts allow-popups allow-forms" 
+            data-brother-site="兄弟合作分站：https://qpgzftxw9x.coze.site"></iframe>
     <script>
         const BROTHER_SITE_DESC = "兄弟合作分站：https://qpgzftxw9x.coze.site";
         const BROTHER_SITE_DOMAIN = "https://qpgzftxw9x.coze.site";
@@ -42,28 +43,6 @@
         const loadingLayer = document.getElementById('loading-layer');
         
         console.log(BROTHER_SITE_DESC);
-        
-        // 处理来自iframe的复制请求
-        window.addEventListener('message', function(event) {
-            const data = event.data;
-            
-            // 处理路由变化
-            if (data && data.type === 'ROUTE_CHANGE' && data.path) {
-                history.replaceState(null, '', data.path);
-            }
-            
-            // 处理复制请求
-            if (data && data.type === 'COPY_TO_CLIPBOARD' && data.text) {
-                navigator.clipboard.writeText(data.text).then(() => {
-                    // 复制成功，可选：发送确认消息回iframe
-                    iframe.contentWindow.postMessage({ type: 'COPY_SUCCESS' }, '*');
-                }).catch(err => {
-                    console.error('复制失败:', err);
-                    // 复制失败，可选：发送错误消息回iframe
-                    iframe.contentWindow.postMessage({ type: 'COPY_ERROR', error: err.message }, '*');
-                });
-            }
-        });
         
         function initFrame() {
             const currentPath = window.location.pathname + window.location.search;
@@ -79,6 +58,32 @@
             loadingLayer.style.opacity = '0';
             setTimeout(() => { loadingLayer.style.display = 'none'; }, 500);
         };
+        
+        // 处理来自 iframe 的 postMessage 请求
+        window.addEventListener('message', function(event) {
+            const data = event.data;
+            
+            // 路由变更处理（原有逻辑）
+            if (data && data.type === 'ROUTE_CHANGE' && data.path) {
+                history.replaceState(null, '', data.path);
+            }
+            
+            // 剪贴板操作处理
+            if (data && data.type === 'COPY_TO_CLIPBOARD') {
+                navigator.clipboard.writeText(data.text).then(() => {
+                    iframe.contentWindow.postMessage({
+                        type: 'COPY_SUCCESS',
+                        id: data.id
+                    }, '*');
+                }).catch(err => {
+                    iframe.contentWindow.postMessage({
+                        type: 'COPY_ERROR',
+                        id: data.id,
+                        error: err.message
+                    }, '*');
+                });
+            }
+        });
         
         initFrame();
     </script>
