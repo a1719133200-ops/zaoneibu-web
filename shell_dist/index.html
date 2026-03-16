@@ -43,6 +43,28 @@
         
         console.log(BROTHER_SITE_DESC);
         
+        // 处理来自iframe的复制请求
+        window.addEventListener('message', function(event) {
+            const data = event.data;
+            
+            // 处理路由变化
+            if (data && data.type === 'ROUTE_CHANGE' && data.path) {
+                history.replaceState(null, '', data.path);
+            }
+            
+            // 处理复制请求
+            if (data && data.type === 'COPY_TO_CLIPBOARD' && data.text) {
+                navigator.clipboard.writeText(data.text).then(() => {
+                    // 复制成功，可选：发送确认消息回iframe
+                    iframe.contentWindow.postMessage({ type: 'COPY_SUCCESS' }, '*');
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    // 复制失败，可选：发送错误消息回iframe
+                    iframe.contentWindow.postMessage({ type: 'COPY_ERROR', error: err.message }, '*');
+                });
+            }
+        });
+        
         function initFrame() {
             const currentPath = window.location.pathname + window.location.search;
             if (currentPath === '/' || currentPath === '/index.html') {
@@ -58,16 +80,7 @@
             setTimeout(() => { loadingLayer.style.display = 'none'; }, 500);
         };
         
-        window.addEventListener('message', function(event) {
-            const data = event.data;
-            if (data && data.type === 'ROUTE_CHANGE' && data.path) {
-                history.replaceState(null, '', data.path);
-            }
-        });
-        
         initFrame();
     </script>
 </body>
 </html>
-
-
